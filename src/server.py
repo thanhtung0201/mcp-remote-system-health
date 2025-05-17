@@ -33,7 +33,6 @@ from src.models.metrics import (
     HealthSummary,
 )
 
-from src.metrics.cpu import get_cpu_metrics
 from src.tools.status import get_system_status
 from src.tools.metrics import (
     get_memory_metrics,
@@ -41,6 +40,7 @@ from src.tools.metrics import (
     get_network_metrics,
     get_security_metrics,
     get_process_list,
+    get_cpu_metrics
 )
 from src.tools.alerts import get_system_alerts
 from src.tools.summary import get_health_summary

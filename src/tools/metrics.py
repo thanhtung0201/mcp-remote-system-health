@@ -10,9 +10,115 @@ import logging
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 
-from src.utils.ssh import run_ssh_command
+from src.utils.ssh import execute_command_on_server, run_ssh_command
 
 logger = logging.getLogger(__name__)
+
+async def get_cpu_metrics(config: dict) -> Dict[str, Any]:
+    """
+    Asynchronously collects CPU metrics from a remote server specified by the given configuration.
+    Args:
+        config (dict): A dictionary containing server connection details, including the 'ip' key.
+    Returns:
+        Dict[str, Any]: A dictionary containing the following CPU metrics:
+            - usage_percent (float): Total CPU usage percentage.
+            - user_percent (float): Percentage of CPU used by user processes.
+            - system_percent (float): Percentage of CPU used by system processes.
+            - idle_percent (float): Percentage of CPU that is idle.
+            - iowait_percent (float): Percentage of CPU waiting for I/O operations.
+            - cores (int): Number of CPU cores.
+            - load_1m (float): System load average over the last 1 minute.
+            - load_5m (float): System load average over the last 5 minutes.
+            - load_15m (float): System load average over the last 15 minutes.
+            - timestamp (str): ISO formatted timestamp of when the metrics were collected.
+            - error (str, optional): Error message if metrics collection fails.
+    Raises:
+        None. Errors are logged and returned in the result dictionary.
+    """
+    logger.info(f"Collecting CPU metrics from {config['ip']}")
+    
+    # Get CPU usage
+    cpu_output, stderr, exit_code = await execute_command_on_server(
+        config=config,
+        command="top -bn1 | grep '%Cpu'"
+    )
+    
+    if exit_code != 0:
+        logger.error(f"Error getting CPU metrics: {stderr}")
+        return {
+            "error": f"Failed to get CPU metrics: {stderr}",
+            "timestamp": datetime.now().isoformat()
+        }
+    
+    # Parse CPU usage
+    cpu_usage = 0.0
+    cpu_user = 0.0
+    cpu_system = 0.0
+    cpu_idle = 0.0
+    cpu_iowait = 0.0
+    
+    if cpu_output:
+        # Parse CPU usage
+        usage_parts = re.findall(r'(\d+\.\d+)\s+\w+', cpu_output)
+        if len(usage_parts) > 0:
+            cpu_user = float(usage_parts[0])
+        if len(usage_parts) > 1:
+            cpu_system = float(usage_parts[1])
+        if len(usage_parts) > 3:
+            cpu_idle = float(usage_parts[3])
+        if len(usage_parts) > 4:
+            cpu_iowait = float(usage_parts[4])
+        
+        # Calculate total CPU usage
+        cpu_usage = 100.0 - cpu_idle
+    
+    # Get load averages
+    load_output, stderr, exit_code = await execute_command_on_server(
+        config=config,
+        command="cat /proc/loadavg"
+    )
+    
+    load_1m, load_5m, load_15m = 0.0, 0.0, 0.0
+    if exit_code == 0 and load_output:
+        load_parts = load_output.split()
+        if len(load_parts) >= 1:
+            try:
+                load_1m = float(load_parts[0])
+            except ValueError:
+                pass
+        if len(load_parts) >= 2:
+            try:
+                load_5m = float(load_parts[1])
+            except ValueError:
+                pass
+        if len(load_parts) >= 3:
+            try:
+                load_15m = float(load_parts[2])
+            except ValueError:
+                pass
+    
+    # Get CPU core count
+    cores_output, stderr, exit_code = await execute_command_on_server(
+        config=config,
+        command="nproc"
+    )
+    
+    cores = 1  # Default to 1 core
+    if exit_code == 0 and cores_output and cores_output.strip().isdigit():
+        cores = int(cores_output.strip())
+    
+    return {
+        "usage_percent": round(cpu_usage, 1),
+        "user_percent": round(cpu_user, 1),
+        "system_percent": round(cpu_system, 1),
+        "idle_percent": round(cpu_idle, 1),
+        "iowait_percent": round(cpu_iowait, 1),
+        "cores": cores,
+        "load_1m": round(load_1m, 2),
+        "load_5m": round(load_5m, 2),
+        "load_15m": round(load_15m, 2),
+        "timestamp": datetime.now().isoformat()
+    }
 
 async def get_memory_metrics(config: Dict) -> Dict[str, Any]:
     """
@@ -206,24 +312,37 @@ async def get_disk_metrics(config: dict, mount_point: Optional[str] = None) -> D
     # Get disk I/O stats if available
     iostat_output, _, io_exit_code = await run_ssh_command(
         config=config,
-        command="iostat -d -x 1 2 | tail -n +8"
+        command="iostat -d -x 1 2"  # Remove tail to capture full output
     )
     
     if io_exit_code == 0:
         io_stats = {}
         lines = iostat_output.strip().splitlines()
-        for line in lines:
-            parts = line.split()
-            if len(parts) >= 14:
-                device = parts[0]
-                # Map basic iostat metrics
-                io_stats[device] = {
-                    "reads_per_sec": float(parts[3]),
-                    "writes_per_sec": float(parts[4]),
-                    "read_kb_per_sec": float(parts[5]),
-                    "write_kb_per_sec": float(parts[6]),
-                    "util_percent": float(parts[13])
-                }
+        
+        # Find the last device section (after the last "Device:" header)
+        device_section_start = -1
+        for i, line in enumerate(lines):
+            if "Device:" in line:
+                device_section_start = i
+        
+        if device_section_start >= 0 and device_section_start + 1 < len(lines):
+            # Process device data lines that follow the last "Device:" header
+            for line in lines[device_section_start + 1:]:
+                parts = line.split()
+                if len(parts) >= 14:
+                    device = parts[0]
+                    try:
+                        # Try to parse as numbers (will fail for header lines with text like 'rrqm/s')
+                        io_stats[device] = {
+                            "reads_per_sec": float(parts[3]),
+                            "writes_per_sec": float(parts[4]),
+                            "read_kb_per_sec": float(parts[5]),
+                            "write_kb_per_sec": float(parts[6]),
+                            "util_percent": float(parts[13])
+                        }
+                    except ValueError:
+                        # Skip lines that can't be parsed as numbers (like headers)
+                        continue
         
         # Enhance disk metrics with I/O stats if available
         for disk in disks:
