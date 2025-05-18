@@ -109,12 +109,12 @@ You can use either password or key_path
   }
 }
 
-## Using as a Library
+Using as a Library
 
 ```python
 from src.server import serve
 
-# Configure your servers, you can use either password or key_path
+Configure your servers, you can use either password or key_path
 server_configs = [
     {
         "hostname": "server1",
@@ -126,7 +126,7 @@ server_configs = [
     }
 ]
 
-# Start the MCP server
+Start the MCP server
 await serve(server_configs)
 ```
 
