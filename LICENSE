@@ -1,0 +1,35 @@
+Here's a customized license for your MCP System Health Monitoring project based on the MIT License format you provided:
+
+The MIT License is an excellent choice for your MCP System Health Monitoring project, especially if you want to encourage community adoption and collaboration. This license is widely used in open-source projects because it's simple, permissive, and compatible with many other licenses.
+
+### Benefits of the MIT License for your project:
+
+1. **Community-Friendly**: The MIT License is very permissive, allowing others to freely use, modify, and distribute your code, which encourages community adoption.
+
+2. **Commercial Use**: It allows commercial use of your software, which can help it gain traction in business environments.
+
+3. **Clear Attribution**: It ensures you get credit for your work through the copyright notice requirement.
+
+4. **Liability Protection**: It includes a disclaimer of warranty that protects you from liability.
+
+5. **Compatibility**: The MIT License is compatible with many other licenses, making it easier to integrate with other open-source projects.
+
+### How to Implement the License:
+
+1. **Save as LICENSE file**: Save the license artifact I've created as a file named `LICENSE` in the root directory of your project.
+
+2. **Add to Documentation**: Mention the license in your README.md file:
+   ```markdown
+   ## License
+   This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+   ```
+
+3. **Include in Source Code**: You might want to add a brief license header to your source code files:
+   ```python
+   # Copyright (c) 2025 Tung Le
+   # Licensed under the MIT License. See LICENSE file in the project root for full license information.
+   ```
+
+4. **Package Information**: If you're distributing your software as a package, include license information in your package metadata (e.g., in `setup.py` for Python packages).
+
+This license will help your MCP System Health Monitoring project grow by giving users and contributors the freedom to use, modify, and share your code while still requiring attribution to you as the original author.

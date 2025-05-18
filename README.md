@@ -90,7 +90,7 @@ To use the MCP System Health server with MCP clients like Claude, you'll need to
 ### Claude Integration
 
 Add this configuration to Claude's MCP settings and restart for changes to take effect:
-
+You can use either password or key_path
 ```json
 {
   "mcpServers": {
@@ -109,18 +109,19 @@ Add this configuration to Claude's MCP settings and restart for changes to take 
   }
 }
 
-### Using as a Library
+## Using as a Library
 
 ```python
 from src.server import serve
 
-# Configure your servers
+# Configure your servers, you can use either password or key_path
 server_configs = [
     {
         "hostname": "server1",
         "ip": "192.168.1.100",
         "ssh_port": 22,
         "username": "admin",
+        "password": "password",
         "key_path": "~/.ssh/id_rsa"
     }
 ]
@@ -200,3 +201,4 @@ The system provides automatic alerts based on these default thresholds:
 Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
+[MIT License](LICENSE)
