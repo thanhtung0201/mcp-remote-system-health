@@ -18,8 +18,7 @@ MCP System Health Monitoring provides real-time health and performance metrics f
 
 ## Requirements
 
-- Python 3.8+
-- asyncssh
+- Python 3.10+
 - MCP Python SDK
 - SSH access to target servers
 
@@ -30,8 +29,22 @@ MCP System Health Monitoring provides real-time health and performance metrics f
    git clone https://github.com/yourusername/mcp-system-health.git
    cd mcp-system-health
    ```
+2. Create a virtual environment:
+    
+    ```
+    python -m venv venv
+    ```
+    **Activate the virtual environment**
 
-2. Install dependencies:
+    - On macOS/Linux:
+      ```
+      source venv/bin/activate
+      ```
+    - On Windows:
+      ```
+      venv\Scripts\activate
+      ```
+3. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
@@ -69,6 +82,32 @@ Alternatively, you can use the command-line launcher to dynamically create confi
 - `--servers`: Comma-separated list of server IPs (required)
 - `--repository`: Path to existing server repository
 - `--log-level`: Logging level (debug, info, warning, error)
+
+## Integration with MCP Clients
+
+To use the MCP System Health server with MCP clients like Claude, you'll need to add the server configuration to your client's MCP settings.
+
+### Claude Integration
+
+Add this configuration to Claude's MCP settings and restart for changes to take effect:
+
+```json
+{
+  "mcpServers": {
+    "system-health": {
+      "command": "/path/to/your/venv/bin/python3",
+      "args": [
+        "/path/to/your/system-health-mcp-server/src/mcp_launcher.py", 
+        "--username=your_ssh_username", 
+        "--password=your_ssh_password",
+        "--key-path=~/.ssh/id_rsa",
+        "--servers=server1.example.com,server2.example.com", 
+        "--log-level=debug"
+      ],
+      "description": "System Health MCP Server for monitoring remote servers"
+    }
+  }
+}
 
 ### Using as a Library
 
