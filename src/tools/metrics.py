@@ -349,7 +349,7 @@ async def get_disk_metrics(config: dict, mount_point: Optional[str] = None) -> D
             device_name = os.path.basename(disk["device"])
             if device_name in io_stats:
                 disk["io_stats"] = io_stats[device_name]
-    
+                
     return {
         "disks": disks,
         "timestamp": datetime.now().isoformat()
